@@ -1,0 +1,174 @@
+---
+title: "p8105_hw2_"
+author: "Yijia Jiang"
+date: "2022-09-27"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r Load the library,message=FALSE}
+library(tidyverse)
+```
+
+
+
+## Problem 1 (NYC transit dataset)
+```{r,warning = FALSE,message=FALSE}
+# Tidy the NYC transit dataset
+nyc_transit_df = read.csv("./NYC_Transit_Subway_Entrance_And_Exit_Data.csv") %>% 
+  janitor::clean_names() %>%
+  select(line, station_name, station_latitude, station_longitude, starts_with("route"), entry, vending, entrance_type, ada) %>% 
+  mutate(entry = as.logical(recode(entry, "YES" = 'TRUE', "NO" = "FALSE")))
+
+
+# Summary of dataset
+skimr::skim(nyc_transit_df)
+
+
+# Distinct stations
+station = distinct(nyc_transit_df, station_name, line, .keep_all = TRUE)
+
+
+# ADA compliant stations
+station_ada = station %>% filter(ada == "TRUE")
+
+
+# Proportion of station entrances / exits without vending allow entrance
+proportion = nrow(filter(nyc_transit_df, vending == "NO", entry == "TRUE"))/nrow(filter(nyc_transit_df, vending == "NO"))
+```
+
+* The size of the resulting dataset is `r nrow(nyc_transit_df)` rows x `r ncol(nyc_transit_df)` columns.
+* The names of the variables are `r names(nyc_transit_df)`.
+* There are `r station %>% nrow()` distinct stations.
+* `r station_ada %>% nrow()` stations are ADA compliant.
+* The proportion of station entrances / exits without vending allow entrance is `r paste(round(100*proportion, 2), "%", sep="")`.
+
+
+
+```{r,warning = FALSE,message=FALSE}
+# Reformat data so that route number and route name are distinct variables
+nyc_transit_df1 = nyc_transit_df %>%
+  mutate(route8 = as.character(route8),
+         route9 = as.character(route9),
+         route10 = as.character(route10),
+         route11 = as.character(route11)) %>%
+  pivot_longer(route1:route11, names_to = "route_number", values_to = "route_name")
+
+station1 = distinct(nyc_transit_df1, station_name, line, .keep_all = TRUE)
+
+# Distinct stations serve the A train 
+station_A = filter(nyc_transit_df1, route_name == "A")
+
+# Stations serve the A train and ADA compliant
+station_A_ada = filter(nyc_transit_df1, route_name == "A", ada == "TRUE")
+```
+
+* `r station_A %>% nrow()` distinct stations serving the A train.
+* Of the stations that serve the A train, `r station_A_ada %>% nrow()` stations are ADA compliant.
+
+
+
+## Problem 2 (Mr. Trash Wheel dataset)
+```{r,warning = FALSE,message=FALSE}
+# Tidy the Mr. Trash Wheel dataset
+mr_trash_df= readxl::read_excel("./Trash-Wheel-Collection-Totals-7-2020-2.xlsx", 
+                                 sheet = "Mr. Trash Wheel",
+                                 range = cellranger::cell_cols("A:N")) %>% 
+  janitor::clean_names() %>%
+  drop_na(dumpster) %>% 
+  filter(dumpster != "Grand Total") %>%
+  mutate(sports_balls = round(sports_balls, 0),
+        month = recode(month,"Decemeber" = "December"),
+        dumpster = as.integer(dumpster)) %>% 
+  rename(weight = weight_tons, volume = volume_cubic_yards)
+
+
+# Tidy the Professor Trash Wheel dataset
+prof_trash_df = readxl::read_excel("./Trash-Wheel-Collection-Totals-7-2020-2.xlsx", 
+                                 sheet = "Professor Trash Wheel",
+                                 range = cellranger::cell_cols("A:N")) %>% 
+  janitor::clean_names() %>%
+  drop_na(dumpster) %>% 
+  filter(dumpster != "Grand Total") %>%
+  mutate(sports_balls = round(sports_balls, 0)) %>% 
+  rename(weight = weight_tons, volume = volume_cubic_yards)
+
+
+# Merge the two Trash Wheel datasets
+mr_trash_merge_df = mr_trash_df %>% mutate(source = "Mr. Trash Wheel")
+prof_trash_merge_df = prof_trash_df %>% mutate(source = "Professor Trash Wheel")
+trash_merge_df = rbind(mr_trash_merge_df, prof_trash_merge_df)
+
+
+# Total weight of trash collected by Professor Trash Wheel
+total_weight_prof = sum(prof_trash_df$weight)
+
+
+# Total number of sports balls collected by Mr. Trash Wheel in 2020
+total_ball_mr = sum(mr_trash_df$sports_balls)
+```
+
+* The total weight of trash collected by Professor Trash Wheel is `r total_weight_prof` tons.
+* The total number of sports balls collected by Mr. Trash Wheel in 2020 was `r total_ball_mr`.
+
+
+
+
+## Problem 3 (Fivethirtyeight datasets)
+```{r}
+# Tidy the pols_month dataset
+pols_month_df = read.csv("./fivethirtyeight_datasets/pols-month.csv") %>% 
+  janitor::clean_names() %>% 
+  separate(mon, c("year","month","day")) %>%
+  mutate(year = as.integer(year), month = as.integer(month), day = as.integer(day))%>%
+  mutate(month = month.abb[month]) %>% 
+  mutate(president = ifelse(prez_gop == "0", "dem","gop")) %>% 
+  relocate(president, .before = "gov_gop") %>% 
+  select(-prez_dem, -prez_gop, -day)
+
+
+# Tidy the snp dataset
+snp_df = read.csv("./fivethirtyeight_datasets/snp.csv") %>% 
+  janitor::clean_names() %>% 
+  mutate(date = lubridate::parse_date_time2(date,orders ="mdy", cutoff_2000 = 20)) %>% 
+  separate(date, c("year","month","day")) %>%
+  mutate(year = as.integer(year), month = as.integer(month), day = as.integer(day))%>%
+  mutate(month = month.abb[month]) %>% 
+  relocate(year, .before = "month") %>% 
+  select(-day)
+
+
+# Tidy the unemployment dataset
+unemployment_df = read.csv("./fivethirtyeight_datasets/unemployment.csv") %>% 
+  pivot_longer(Jan:Dec,names_to = "month", values_to = "unemployment_rate") %>%
+  janitor::clean_names() 
+
+
+# Merge snp into pols
+snp_into_pols =  left_join(pols_month_df, snp_df, by = c("year","month"))
+
+
+# Merge unemployment into the result
+merge_df = left_join(snp_into_pols, unemployment_df, by = c("year","month"))
+```
+
+Write a short paragraph about these datasets. Explain briefly what each dataset contained, and describe the resulting dataset (e.g. give the dimension, range of years, and names of key variables).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
