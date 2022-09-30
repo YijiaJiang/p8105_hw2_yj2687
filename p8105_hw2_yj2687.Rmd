@@ -21,7 +21,8 @@ library(tidyverse)
 # Tidy the NYC transit dataset
 nyc_transit_df = read.csv("./NYC_Transit_Subway_Entrance_And_Exit_Data.csv") %>% 
   janitor::clean_names() %>%
-  select(line, station_name, station_latitude, station_longitude, starts_with("route"), entry, vending, entrance_type, ada) %>% 
+  select(line, station_name, station_latitude, station_longitude, starts_with("route"), 
+         entry, vending, entrance_type, ada) %>% 
   mutate(entry = as.logical(recode(entry, "YES" = 'TRUE', "NO" = "FALSE")))
 
 
@@ -39,14 +40,16 @@ station_ada = station %>% filter(ada == "TRUE")
 
 # Proportion of station entrances / exits without vending allow entrance
 proportion = nrow(filter(nyc_transit_df, vending == "NO", entry == "TRUE"))/nrow(filter(nyc_transit_df, vending == "NO"))
+
+
 ```
 
 * The size of the resulting dataset is `r nrow(nyc_transit_df)` rows x `r ncol(nyc_transit_df)` columns.
 * The names of the variables are `r names(nyc_transit_df)`.
-* There are `r station %>% nrow()` distinct stations.
-* `r station_ada %>% nrow()` stations are ADA compliant.
+* There are `r station %>% nrow()` distinct stations, of which `r station_ada %>% nrow()` are ADA compliant.
 * The proportion of station entrances / exits without vending allow entrance is `r paste(round(100*proportion, 2), "%", sep="")`.
 
+&nbsp;
 
 
 ```{r,warning = FALSE,message=FALSE}
@@ -61,14 +64,16 @@ nyc_transit_df1 = nyc_transit_df %>%
 station1 = distinct(nyc_transit_df1, station_name, line, .keep_all = TRUE)
 
 # Distinct stations serve the A train 
-station_A = filter(nyc_transit_df1, route_name == "A")
+station_A = filter(station1, route_name == "A")
 
 # Stations serve the A train and ADA compliant
-station_A_ada = filter(nyc_transit_df1, route_name == "A", ada == "TRUE")
+station_A_ada = filter(station1, route_name == "A", ada == "TRUE")
 ```
 
 * `r station_A %>% nrow()` distinct stations serving the A train.
 * Of the stations that serve the A train, `r station_A_ada %>% nrow()` stations are ADA compliant.
+
+&nbsp;
 
 
 
@@ -81,9 +86,9 @@ mr_trash_df= readxl::read_excel("./Trash-Wheel-Collection-Totals-7-2020-2.xlsx",
   janitor::clean_names() %>%
   drop_na(dumpster) %>% 
   filter(dumpster != "Grand Total") %>%
-  mutate(sports_balls = round(sports_balls, 0),
-        month = recode(month,"Decemeber" = "December"),
-        dumpster = as.integer(dumpster)) %>% 
+  mutate(sports_balls = as.integer(round(sports_balls, 0)),
+         month = recode(month,"Decemeber" = "December"),
+         dumpster = as.integer(dumpster)) %>% 
   rename(weight = weight_tons, volume = volume_cubic_yards)
 
 
@@ -94,7 +99,7 @@ prof_trash_df = readxl::read_excel("./Trash-Wheel-Collection-Totals-7-2020-2.xls
   janitor::clean_names() %>%
   drop_na(dumpster) %>% 
   filter(dumpster != "Grand Total") %>%
-  mutate(sports_balls = round(sports_balls, 0)) %>% 
+  mutate(sports_balls = as.integer(round(sports_balls, 0))) %>% 
   rename(weight = weight_tons, volume = volume_cubic_yards)
 
 
@@ -109,19 +114,23 @@ total_weight_prof = sum(prof_trash_df$weight)
 
 
 # Total number of sports balls collected by Mr. Trash Wheel in 2020
-total_ball_mr = sum(mr_trash_df$sports_balls)
+total_ball_mr = mr_trash_df %>% 
+  filter(year == "2020") %>% 
+  pull(sports_balls) %>% 
+  sum()
 ```
 
+* There are `r nrow(trash_merge_df)` observations in the resulting dataset, including `r ncol(trash_merge_df)` variables, namely `r names(trash_merge_df)`.
 * The total weight of trash collected by Professor Trash Wheel is `r total_weight_prof` tons.
 * The total number of sports balls collected by Mr. Trash Wheel in 2020 was `r total_ball_mr`.
 
-
+&nbsp;
 
 
 ## Problem 3 (Fivethirtyeight datasets)
 ```{r}
 # Tidy the pols_month dataset
-pols_month_df = read.csv("./fivethirtyeight_datasets/pols-month.csv") %>% 
+pols_df = read.csv("./fivethirtyeight_datasets/pols-month.csv") %>% 
   janitor::clean_names() %>% 
   separate(mon, c("year","month","day")) %>%
   mutate(year = as.integer(year), month = as.integer(month), day = as.integer(day))%>%
@@ -134,7 +143,7 @@ pols_month_df = read.csv("./fivethirtyeight_datasets/pols-month.csv") %>%
 # Tidy the snp dataset
 snp_df = read.csv("./fivethirtyeight_datasets/snp.csv") %>% 
   janitor::clean_names() %>% 
-  mutate(date = lubridate::parse_date_time2(date,orders ="mdy", cutoff_2000 = 20)) %>% 
+  mutate(date = lubridate::parse_date_time2(date,orders ="mdy", cutoff_2000 = 23)) %>% 
   separate(date, c("year","month","day")) %>%
   mutate(year = as.integer(year), month = as.integer(month), day = as.integer(day))%>%
   mutate(month = month.abb[month]) %>% 
@@ -149,17 +158,25 @@ unemployment_df = read.csv("./fivethirtyeight_datasets/unemployment.csv") %>%
 
 
 # Merge snp into pols
-snp_into_pols =  left_join(pols_month_df, snp_df, by = c("year","month"))
+snp_into_pols =  left_join(pols_df, snp_df, by = c("year","month"))
 
 
 # Merge unemployment into the result
 merge_df = left_join(snp_into_pols, unemployment_df, by = c("year","month"))
 ```
 
-Write a short paragraph about these datasets. Explain briefly what each dataset contained, and describe the resulting dataset (e.g. give the dimension, range of years, and names of key variables).
 
+* All of the three datasets used in this problem were taken from the `FiveThirtyEight` data.
 
+* The tidied `pols-month` dataset contains `r nrow(pols_df)` observations with `r ncol(pols_df)` variables, which are `r names(pols_df)`, respectively. The range of years is [`r pols_df %>% pull(year) %>% range()`].
 
+* The tidied `snp` dataset contains `r nrow(snp_df)` observations with `r ncol(snp_df)` variables,  which are `r names(snp_df)`, respectively. The range of years is [`r snp_df %>% pull(year) %>% range()`].
+
+* The tidied `unemployment` dataset contains `r nrow(unemployment_df)` observations of `r ncol(unemployment_df)` variables, which are `r names(unemployment_df)`, respectively. The range of years is [`r unemployment_df %>% pull(year) %>% range()`].
+
+* After merging `snp` dataset into `pols-month` dataset, the dimension of the resulting dataset is `r nrow(snp_into_pols)` rows x `r ncol(snp_into_pols)` columns. It includes `r ncol(snp_into_pols)` variables: `r names(snp_into_pols)`. The range of years is [`r snp_into_pols %>% pull(year) %>% range()`].
+
+* After merging `unemployment` dataset into the previous resulting dataset `snp_into_pols`, the dimension of the merged dataset is `r nrow(merge_df)` rows x `r ncol(merge_df)` columns. It includes `r ncol(merge_df)` variables: `r names(merge_df)`. The range of years is [`r merge_df %>% pull(year) %>% range()`].
 
 
 
