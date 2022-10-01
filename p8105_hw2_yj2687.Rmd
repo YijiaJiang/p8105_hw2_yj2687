@@ -19,7 +19,7 @@ library(tidyverse)
 ## Problem 1 (NYC transit dataset)
 ```{r,warning = FALSE,message=FALSE}
 # Tidy the NYC transit dataset
-nyc_transit_df = read.csv("./NYC_Transit_Subway_Entrance_And_Exit_Data.csv") %>% 
+nyc_transit_df = read.csv("./p8105_hw2_data/NYC_Transit_Subway_Entrance_And_Exit_Data.csv") %>% 
   janitor::clean_names() %>%
   select(line, station_name, station_latitude, station_longitude, starts_with("route"), 
          entry, vending, entrance_type, ada) %>% 
@@ -80,7 +80,7 @@ station_A_ada = filter(station1, route_name == "A", ada == "TRUE")
 ## Problem 2 (Mr. Trash Wheel dataset)
 ```{r,warning = FALSE,message=FALSE}
 # Tidy the Mr. Trash Wheel dataset
-mr_trash_df= readxl::read_excel("./Trash-Wheel-Collection-Totals-7-2020-2.xlsx", 
+mr_trash_df= readxl::read_excel("./p8105_hw2_data/Trash-Wheel-Collection-Totals-7-2020-2.xlsx", 
                                  sheet = "Mr. Trash Wheel",
                                  range = cellranger::cell_cols("A:N")) %>% 
   janitor::clean_names() %>%
@@ -93,7 +93,7 @@ mr_trash_df= readxl::read_excel("./Trash-Wheel-Collection-Totals-7-2020-2.xlsx",
 
 
 # Tidy the Professor Trash Wheel dataset
-prof_trash_df = readxl::read_excel("./Trash-Wheel-Collection-Totals-7-2020-2.xlsx", 
+prof_trash_df = readxl::read_excel("./p8105_hw2_data/Trash-Wheel-Collection-Totals-7-2020-2.xlsx", 
                                  sheet = "Professor Trash Wheel",
                                  range = cellranger::cell_cols("A:N")) %>% 
   janitor::clean_names() %>%
@@ -130,7 +130,7 @@ total_ball_mr = mr_trash_df %>%
 ## Problem 3 (Fivethirtyeight datasets)
 ```{r}
 # Tidy the pols_month dataset
-pols_df = read.csv("./fivethirtyeight_datasets/pols-month.csv") %>% 
+pols_df = read.csv("./p8105_hw2_data/fivethirtyeight_datasets/pols-month.csv") %>% 
   janitor::clean_names() %>% 
   separate(mon, c("year","month","day")) %>%
   mutate(year = as.integer(year), month = as.integer(month), day = as.integer(day))%>%
@@ -141,7 +141,7 @@ pols_df = read.csv("./fivethirtyeight_datasets/pols-month.csv") %>%
 
 
 # Tidy the snp dataset
-snp_df = read.csv("./fivethirtyeight_datasets/snp.csv") %>% 
+snp_df = read.csv("./p8105_hw2_data/fivethirtyeight_datasets/snp.csv") %>% 
   janitor::clean_names() %>% 
   mutate(date = lubridate::parse_date_time2(date,orders ="mdy", cutoff_2000 = 23)) %>% 
   separate(date, c("year","month","day")) %>%
@@ -152,7 +152,7 @@ snp_df = read.csv("./fivethirtyeight_datasets/snp.csv") %>%
 
 
 # Tidy the unemployment dataset
-unemployment_df = read.csv("./fivethirtyeight_datasets/unemployment.csv") %>% 
+unemployment_df = read.csv("./p8105_hw2_data/fivethirtyeight_datasets/unemployment.csv") %>% 
   pivot_longer(Jan:Dec,names_to = "month", values_to = "unemployment_rate") %>%
   janitor::clean_names() 
 
