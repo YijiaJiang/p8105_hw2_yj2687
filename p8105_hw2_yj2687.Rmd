@@ -1,5 +1,5 @@
 ---
-title: "p8105_hw2_"
+title: "p8105_hw2_yj2787"
 author: "Yijia Jiang"
 date: "2022-09-27"
 output: github_document
@@ -80,12 +80,11 @@ station_A_ada = filter(station1, route_name == "A", ada == "TRUE")
 ## Problem 2 (Mr. Trash Wheel dataset)
 ```{r,warning = FALSE,message=FALSE}
 # Tidy the Mr. Trash Wheel dataset
-mr_trash_df= readxl::read_excel("./p8105_hw2_data/Trash-Wheel-Collection-Totals-7-2020-2.xlsx", 
+mr_trash_df= readxl::read_excel("./p8105_hw2_data/Trash Wheel Collection Data.xlsx", 
                                  sheet = "Mr. Trash Wheel",
                                  range = cellranger::cell_cols("A:N")) %>% 
   janitor::clean_names() %>%
   drop_na(dumpster) %>% 
-  filter(dumpster != "Grand Total") %>%
   mutate(sports_balls = as.integer(round(sports_balls, 0)),
          month = recode(month,"Decemeber" = "December"),
          dumpster = as.integer(dumpster)) %>% 
@@ -93,19 +92,19 @@ mr_trash_df= readxl::read_excel("./p8105_hw2_data/Trash-Wheel-Collection-Totals-
 
 
 # Tidy the Professor Trash Wheel dataset
-prof_trash_df = readxl::read_excel("./p8105_hw2_data/Trash-Wheel-Collection-Totals-7-2020-2.xlsx", 
+prof_trash_df = readxl::read_excel("./p8105_hw2_data/Trash Wheel Collection Data.xlsx", 
                                  sheet = "Professor Trash Wheel",
-                                 range = cellranger::cell_cols("A:N")) %>% 
+                                 range = cellranger::cell_cols("A:M")) %>% 
   janitor::clean_names() %>%
   drop_na(dumpster) %>% 
-  filter(dumpster != "Grand Total") %>%
-  mutate(sports_balls = as.integer(round(sports_balls, 0))) %>% 
   rename(weight = weight_tons, volume = volume_cubic_yards)
 
 
 # Merge the two Trash Wheel datasets
 mr_trash_merge_df = mr_trash_df %>% mutate(source = "Mr. Trash Wheel")
-prof_trash_merge_df = prof_trash_df %>% mutate(source = "Professor Trash Wheel")
+prof_trash_merge_df = prof_trash_df %>% 
+  mutate(sports_balls = NA, source = "Professor Trash Wheel") %>% 
+  relocate(sports_balls, .before = "homes_powered") 
 trash_merge_df = rbind(mr_trash_merge_df, prof_trash_merge_df)
 
 
@@ -137,6 +136,7 @@ pols_df = read.csv("./p8105_hw2_data/fivethirtyeight_datasets/pols-month.csv") %
   mutate(month = month.abb[month]) %>% 
   mutate(president = ifelse(prez_gop == "0", "dem","gop")) %>% 
   relocate(president, .before = "gov_gop") %>% 
+  arrange(year,month) %>% 
   select(-prez_dem, -prez_gop, -day)
 
 
@@ -148,13 +148,15 @@ snp_df = read.csv("./p8105_hw2_data/fivethirtyeight_datasets/snp.csv") %>%
   mutate(year = as.integer(year), month = as.integer(month), day = as.integer(day))%>%
   mutate(month = month.abb[month]) %>% 
   relocate(year, .before = "month") %>% 
+  arrange(year,month) %>% 
   select(-day)
 
 
 # Tidy the unemployment dataset
 unemployment_df = read.csv("./p8105_hw2_data/fivethirtyeight_datasets/unemployment.csv") %>% 
   pivot_longer(Jan:Dec,names_to = "month", values_to = "unemployment_rate") %>%
-  janitor::clean_names() 
+  janitor::clean_names() %>% 
+  arrange(year,month)
 
 
 # Merge snp into pols
